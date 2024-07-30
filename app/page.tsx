@@ -1,268 +1,83 @@
 "use client";
-import { useState } from "react";
-import { useOkto, type OktoContextType } from "okto-sdk-react";
-import { useRouter } from "next/navigation";
-export default function HomePage() {
-  const [userDetails, setUserDetails] = useState<any>(null);
-  const [portfolioData, setPortfolioData] = useState<any>(null);
-  const [wallets, setWallets] = useState<any>(null);
-  const [transferResponse, setTransferResponse] = useState<any>(null);
-  const [orderResponse, setOrderResponse] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+import AuthButton from "@/components/authButton";
+import GetButton from "@/components/getButton";
+import { LoginButton } from "@/components/login";
+import { useSession } from "next-auth/react";
+import { OktoContextType, useOkto } from "okto-sdk-react";
+import React, { useEffect, useMemo } from "react";
 
-  const router = useRouter();
-  const { isLoggedIn } = useOkto() as OktoContextType;
+export default function Home() {
+  const { data: session } = useSession();
+  const {
+    isLoggedIn,
+    authenticate,
+    logOut,
+    getPortfolio,
+    getWallets,
+    createWallet,
+    getSupportedNetworks,
+    getSupportedTokens,
+    getUserDetails,
+    orderHistory,
+    getNftOrderDetails,
+  } = useOkto() as OktoContextType;
+  const idToken = useMemo(() => (session ? session.id_token : null), [session]);
 
-  if (!isLoggedIn) {
-    router.push("/login");
+  async function handleAuthenticate(): Promise<any> {
+    if (!idToken) {
+      return { result: false, error: "No google login" };
+    }
+    return new Promise((resolve) => {
+      authenticate(idToken, (result: any, error: any) => {
+        if (result) {
+          console.log("Authentication successful");
+          resolve({ result: true });
+        } else if (error) {
+          console.error("Authentication error:", error);
+          resolve({ result: false, error });
+        }
+      });
+    });
   }
 
-  const {
-    getUserDetails,
-    getPortfolio,
-    createWallet,
-    transferTokens,
-    orderHistory,
-  } = useOkto() as OktoContextType;
-
-  const [transferData, setTransferData] = useState({
-    network_name: "",
-    token_address: "",
-    recipient_address: "",
-    quantity: "",
-  });
-
-  const [orderData, setOrderData] = useState({
-    order_id: "",
-  });
-
-  const fetchUserDetails = async () => {
+  async function handleLogout() {
     try {
-      const details = await getUserDetails();
-      setUserDetails(details);
-      setActiveSection("userDetails");
-    } catch (error: any) {
-      setError(`Failed to fetch user details: ${error.message}`);
+      logOut();
+      return { result: "logout success" };
+    } catch (error) {
+      return { result: "logout failed" };
     }
-  };
+  }
 
-  const fetchPortfolio = async () => {
-    try {
-      const portfolio = await getPortfolio();
-      setPortfolioData(portfolio);
-      setActiveSection("portfolio");
-    } catch (error: any) {
-      setError(`Failed to fetch portfolio: ${error.message}`);
+  useEffect(() => {
+    if (isLoggedIn) {
+      console.log("Okto is authenticated");
     }
-  };
-
-  const fetchWallets = async () => {
-    try {
-      const walletsData = await createWallet();
-      console.log(walletsData);
-      setWallets(walletsData);
-      setActiveSection("wallets");
-    } catch (error: any) {
-      setError(`Failed to fetch wallets: ${error.message}`);
-    }
-  };
-
-  const handleTransferTokens = async (e: any) => {
-    e.preventDefault();
-    try {
-      const response = await transferTokens(transferData);
-      console.log(response);
-      setTransferResponse(response);
-      setActiveSection("transferResponse");
-    } catch (error: any) {
-      console.log(error);
-      setError(
-        `Failed to transfer tokens: ${
-          error.response?.data?.message || error.message
-        }`
-      );
-    }
-  };
-
-  const handleInputChange = (e: any) => {
-    setTransferData({ ...transferData, [e.target.name]: e.target.value });
-  };
-
-  const handleOrderCheck = async (e: any) => {
-    e.preventDefault();
-    try {
-      const response = await orderHistory(orderData);
-      setOrderResponse(response);
-      setActiveSection("orderResponse");
-    } catch (error: any) {
-      setError(
-        `Failed to fetch order status: ${
-          error.response?.data?.message || error.message
-        }`
-      );
-    }
-  };
-
-  const handleInputChangeOrders = (e: any) => {
-    setOrderData({ ...orderData, [e.target.name]: e.target.value });
-  };
-
-  const containerStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "20px",
-    maxWidth: "800px",
-    margin: "0 auto",
-  };
-
-  const buttonStyle = {
-    margin: "5px",
-    padding: "10px 20px",
-    fontSize: "16px",
-    cursor: "pointer",
-  };
-
-  const formStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    width: "100%",
-    maxWidth: "400px",
-  };
-
-  const inputStyle = {
-    margin: "5px",
-    padding: "10px",
-    width: "100%",
-    fontSize: "16px",
-  };
+  }, [isLoggedIn]);
 
   return (
-    <div style={containerStyle}>
-      <h1>Home Page</h1>
+    <main className="flex min-h-screen flex-col items-center space-y-6 p-12 bg-violet-200">
+      <div className="text-black font-bold text-3xl mb-8">Okto SDK</div>
+      <div className="space-y-6 w-full max-w-lg"></div>
 
-      <div>
-        <button style={buttonStyle} onClick={fetchUserDetails}>
-          View User Details
-        </button>
-        <button style={buttonStyle} onClick={fetchPortfolio}>
-          View Portfolio
-        </button>
-        <button style={buttonStyle} onClick={fetchWallets}>
-          View Wallets
-        </button>
+      <div className="grid grid-cols-2 gap-4 w-full max-w-lg mt-8">
+        <LoginButton />
+
+        <GetButton title="Okto Authenticate" apiFn={handleAuthenticate} />
+        <GetButton title="Okto Log out" apiFn={handleLogout} />
+        <GetButton title="getPortfolio" apiFn={getPortfolio} />
+        <GetButton title="getSupportedNetworks" apiFn={getSupportedNetworks} />
+        <GetButton title="getSupportedTokens" apiFn={getSupportedTokens} />
+        <GetButton title="getUserDetails" apiFn={getUserDetails} />
+        <GetButton title="getWallets" apiFn={getWallets} />
+        <GetButton title="createWallet" apiFn={createWallet} />
+        <GetButton title="orderHistory" apiFn={() => orderHistory({})} />
+        {/* <GetButton title="getRawTransactionStatus" apiFn={() => getRawTransactionStatus({})} /> */}
+        <GetButton
+          title="getNftOrderDetails"
+          apiFn={() => getNftOrderDetails({})}
+        />
       </div>
-
-      {activeSection === "userDetails" && userDetails && (
-        <div>
-          <h2>User Details:</h2>
-          <pre>{JSON.stringify(userDetails, null, 2)}</pre>
-        </div>
-      )}
-
-      {activeSection === "portfolio" && portfolioData && (
-        <div>
-          <h2>Portfolio Data:</h2>
-          <pre>{JSON.stringify(portfolioData, null, 2)}</pre>
-        </div>
-      )}
-
-      {activeSection === "wallets" && wallets && (
-        <div>
-          <h2>Wallets:</h2>
-          <pre>{JSON.stringify(wallets, null, 2)}</pre>
-        </div>
-      )}
-
-      <button
-        onClick={async () => {
-          await fetchPortfolio();
-          console.log("portfolio refreshed");
-        }}
-      >
-        Refresh portfolio
-      </button>
-      <h2>Transfer Tokens</h2>
-      <form style={formStyle} onSubmit={handleTransferTokens}>
-        <input
-          style={inputStyle}
-          type="text"
-          name="network_name"
-          placeholder="Network Name"
-          value={transferData.network_name}
-          onChange={handleInputChange}
-          required
-        />
-        <input
-          style={inputStyle}
-          type="text"
-          name="token_address"
-          placeholder="Token Address"
-          value={transferData.token_address}
-          onChange={handleInputChange}
-          required
-        />
-        <input
-          style={inputStyle}
-          type="text"
-          name="quantity"
-          placeholder="Quantity"
-          value={transferData.quantity}
-          onChange={handleInputChange}
-          required
-        />
-        <input
-          style={inputStyle}
-          type="text"
-          name="recipient_address"
-          placeholder="Recipient Address"
-          value={transferData.recipient_address}
-          onChange={handleInputChange}
-          required
-        />
-        <button style={buttonStyle} type="submit">
-          Transfer Tokens
-        </button>
-      </form>
-
-      {activeSection === "transferResponse" && transferResponse && (
-        <div>
-          <h2>Transfer Response:</h2>
-          <pre>{JSON.stringify(transferResponse, null, 2)}</pre>
-        </div>
-      )}
-
-      <h2>Check Order</h2>
-      <form style={formStyle} onSubmit={handleOrderCheck}>
-        <input
-          style={inputStyle}
-          type="text"
-          name="order_id"
-          placeholder="Order Id"
-          value={orderData.order_id}
-          onChange={handleInputChangeOrders}
-          required
-        />
-        <button style={buttonStyle} type="submit">
-          Check Status
-        </button>
-      </form>
-
-      {activeSection === "orderResponse" && orderResponse && (
-        <div>
-          <h2>Order Status:</h2>
-          <pre>{JSON.stringify(orderResponse, null, 2)}</pre>
-        </div>
-      )}
-
-      {error && (
-        <div style={{ color: "red" }}>
-          <h2>Error:</h2>
-          <p>{error}</p>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }
