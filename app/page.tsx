@@ -1,5 +1,4 @@
 "use client";
-import AuthButton from "@/components/authButton";
 import GetButton from "@/components/getButton";
 import { LoginButton } from "@/components/login";
 import { useSession } from "next-auth/react";
@@ -17,8 +16,8 @@ export default function Home() {
     createWallet,
     getSupportedNetworks,
     getSupportedTokens,
-    getUserDetails,
     orderHistory,
+    getUserDetails,
     getNftOrderDetails,
   } = useOkto() as OktoContextType;
   const idToken = useMemo(() => (session ? session.id_token : null), [session]);
@@ -62,13 +61,13 @@ export default function Home() {
 
       <div className="grid grid-cols-2 gap-4 w-full max-w-lg mt-8">
         <LoginButton />
-
         <GetButton title="Okto Authenticate" apiFn={handleAuthenticate} />
         <GetButton title="Okto Log out" apiFn={handleLogout} />
         <GetButton title="getPortfolio" apiFn={getPortfolio} />
         <GetButton title="getSupportedNetworks" apiFn={getSupportedNetworks} />
         <GetButton title="getSupportedTokens" apiFn={getSupportedTokens} />
-        <GetButton title="getUserDetails" apiFn={getUserDetails} />
+        <GetButton title="getUserDetails" apiFn={getUserDetails} />{" "}
+        {/* Pass the idToken */}
         <GetButton title="getWallets" apiFn={getWallets} />
         <GetButton title="createWallet" apiFn={createWallet} />
         <GetButton title="orderHistory" apiFn={() => orderHistory({})} />

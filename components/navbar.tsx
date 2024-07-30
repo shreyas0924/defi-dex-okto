@@ -1,6 +1,5 @@
 import Link from "next/link";
 import React from "react";
-import { Button } from "./ui/button";
 import { LayoutGridIcon } from "lucide-react";
 import { ModeToggle } from "./ui/mode-toggle";
 

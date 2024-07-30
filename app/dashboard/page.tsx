@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
+import React from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,69 +19,42 @@ import {
   TableBody,
 } from "@/components/ui/table";
 import { ActivityIcon, TrendingUpIcon, WalletIcon } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { type OktoContextType, Portfolio, useOkto } from "okto-sdk-react";
-import { useEffect, useMemo, useState } from "react";
+import { OktoContextType, useOkto } from "okto-sdk-react";
+import { useEffect, useState } from "react";
 
 export default function Dashboard() {
-  const { data: session } = useSession();
-  const {
-    isLoggedIn,
-    authenticate,
-    authenticateWithUserId,
-    logOut,
-    getPortfolio,
-    transferTokens,
-    getWallets,
-    createWallet,
-    getSupportedNetworks,
-    getSupportedTokens,
-    getUserDetails,
-    orderHistory,
-    getNftOrderDetails,
-    showWidgetModal,
-    getRawTransactionStatus,
-    transferTokensWithJobStatus,
-    transferNft,
-    transferNftWithJobStatus,
-    executeRawTransaction,
-    executeRawTransactionWithJobStatus,
-    setTheme,
-    getTheme,
-  } = useOkto() as OktoContextType;
-  const idToken = useMemo(() => (session ? session.id_token : null), [session]);
-
-  async function handleAuthenticate(): Promise<any> {
-    if (!idToken) {
-      return { result: false, error: "No google login" };
-    }
-    return new Promise((resolve) => {
-      authenticate(idToken, (result: any, error: any) => {
-        if (result) {
-          console.log("Authentication successful");
-          resolve({ result: true });
-        } else if (error) {
-          console.error("Authentication error:", error);
-          resolve({ result: false, error });
-        }
-      });
-    });
-  }
-
-  async function handleLogout() {
-    try {
-      logOut();
-      return { result: "logout success" };
-    } catch (error) {
-      return { result: "logout failed" };
-    }
-  }
+  const [portfolio, setPortfolio] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [totalTransactions, setTotalTransactions] = useState<number>(0);
+  const { getPortfolio, orderHistory } = useOkto() as OktoContextType;
 
   useEffect(() => {
-    if (isLoggedIn) {
-      console.log("Okto is authenticated");
-    }
-  }, [isLoggedIn]);
+    getPortfolio()
+      .then((result) => {
+        console.log(result);
+        setPortfolio(Array.isArray(result) ? result : []); // Ensure result is an array
+      })
+      .catch((error) => {
+        console.error(error);
+        setPortfolio([]); // Set an empty array in case of error
+      });
+
+    orderHistory({})
+      .then((result) => {
+        console.log("order history", result);
+        setJobs(result.jobs || []); // Set the jobs array
+        setTotalTransactions(result.total || 0); // Set the total number of transactions
+      })
+      .catch((error) => {
+        console.error(`order history error:`, error);
+        setJobs([]); // Set an empty array in case of error
+        setTotalTransactions(0); // Set total transactions to 0 in case of error
+      });
+  }, [getPortfolio, orderHistory]);
+
+  const totalEarningsInINR = portfolio.reduce((acc: any, token: any) => {
+    return acc + parseFloat(token.quantity);
+  }, 0);
 
   return (
     <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
@@ -88,39 +62,22 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-r from-[#7928CA] to-[#FF0080] text-white">
             <CardHeader className="flex flex-col items-start gap-2">
-              <div className="text-sm font-medium">Total Value Locked</div>
-              <div className="text-3xl font-bold">$2,345,678</div>
+              <div className="text-sm font-medium">Total Earnings</div>
+              <div className="text-3xl font-bold">Rs. {totalEarningsInINR}</div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingUpIcon className="w-5 h-5" />
-                <div className="text-sm">+5.2% this month</div>
-              </div>
-            </CardContent>
           </Card>
+
           <Card className="bg-gradient-to-r from-[#0072F5] to-[#00DAC6] text-white">
             <CardHeader className="flex flex-col items-start gap-2">
               <div className="text-sm font-medium">Total Earnings</div>
-              <div className="text-3xl font-bold">$345,678</div>
+              <div className="text-3xl font-bold">Rs. {totalEarningsInINR}</div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingUpIcon className="w-5 h-5" />
-                <div className="text-sm">+8.4% this month</div>
-              </div>
-            </CardContent>
           </Card>
           <Card className="bg-gradient-to-r from-[#FF4B2B] to-[#FF416C] text-white">
             <CardHeader className="flex flex-col items-start gap-2">
               <div className="text-sm font-medium">Total Transactions</div>
-              <div className="text-3xl font-bold">12,345</div>
+              <div className="text-3xl font-bold">{totalTransactions}</div>
             </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <TrendingUpIcon className="w-5 h-5" />
-                <div className="text-sm">+3.1% this month</div>
-              </div>
-            </CardContent>
           </Card>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
@@ -190,73 +147,6 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Portfolio Overview</CardTitle>
-              <CardDescription>
-                Detailed insights into your digital asset portfolio.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="BTC"
-                      className="rounded-full"
-                    />
-                    <div>Bitcoin (BTC)</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">1.25 BTC</div>
-                    <div className="text-sm text-muted-foreground">$62,500</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="ETH"
-                      className="rounded-full"
-                    />
-                    <div>Ethereum (ETH)</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">5.68 ETH</div>
-                    <div className="text-sm text-muted-foreground">$17,040</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="USDC"
-                      className="rounded-full"
-                    />
-                    <div>USDC</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">$25,000</div>
-                    <div className="text-sm text-muted-foreground">
-                      Stablecoin
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>View Details</Button>
-            </CardFooter>
-          </Card>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
-          <Card>
-            <CardHeader>
               <CardTitle>Swap</CardTitle>
               <CardDescription>
                 Exchange your digital assets seamlessly.
@@ -324,6 +214,48 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center gap-4">
+              <WalletIcon className="w-8 h-8 text-primary" />
+              <div className="grid gap-1">
+                <CardTitle>Wallet Balances</CardTitle>
+                <CardDescription>Connected wallets</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Wallet</TableHead>
+                    <TableHead>Network</TableHead>
+                    <TableHead>Balance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>0x123...abc</TableCell>
+                    <TableCell>Ethereum</TableCell>
+                    <TableCell>$15,432.78</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>0x456...def</TableCell>
+                    <TableCell>Polygon</TableCell>
+                    <TableCell>$5,000.00</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>0x789...ghi</TableCell>
+                    <TableCell>Solana</TableCell>
+                    <TableCell>$3,000.00</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>0xabc...def</TableCell>
+                    <TableCell>Avalanche</TableCell>
+                    <TableCell>$2,500.00</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center gap-4">
               <ActivityIcon className="w-8 h-8 text-primary" />
               <div className="grid gap-1">
                 <CardTitle>Recent Transactions</CardTitle>
@@ -370,48 +302,6 @@ export default function Dashboard() {
                     <TableCell>Binance Chain</TableCell>
                     <TableCell>Deposit</TableCell>
                     <TableCell>$1,500.00</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <WalletIcon className="w-8 h-8 text-primary" />
-              <div className="grid gap-1">
-                <CardTitle>Wallet Balances</CardTitle>
-                <CardDescription>Connected wallets</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Wallet</TableHead>
-                    <TableHead>Network</TableHead>
-                    <TableHead>Balance</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>0x123...abc</TableCell>
-                    <TableCell>Ethereum</TableCell>
-                    <TableCell>$15,432.78</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>0x456...def</TableCell>
-                    <TableCell>Polygon</TableCell>
-                    <TableCell>$5,000.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>0x789...ghi</TableCell>
-                    <TableCell>Solana</TableCell>
-                    <TableCell>$3,000.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>0xabc...def</TableCell>
-                    <TableCell>Avalanche</TableCell>
-                    <TableCell>$2,500.00</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
