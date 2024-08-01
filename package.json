@@ -9,14 +9,23 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@orca-so/sdk": "^1.2.26",
+    "@project-serum/anchor": "^0.26.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-select": "^2.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "@react-oauth/google": "^0.12.1",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/web3.js": "^1.95.2",
+    "@tanstack/react-query": "^5.51.16",
     "axios": "^1.7.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "decimal.js": "^10.4.3",
     "lucide-react": "^0.417.0",
     "next": "14.2.5",
     "next-auth": "^4.24.7",
+    "next-themes": "^0.3.0",
     "okto-sdk-react": "^0.1.1",
     "react": "^18",
     "react-dom": "^18",
@@ -24,6 +33,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^5.51.15",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
