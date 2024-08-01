@@ -7,7 +7,7 @@ const Navbar = () => {
   return (
     <header className="flex items-center h-16 px-6 border-b border-muted shrink-0">
       <Link
-        href="#"
+        href="/"
         className="flex items-center gap-2 text-lg font-semibold"
         prefetch={false}
       >
@@ -23,7 +23,7 @@ const Navbar = () => {
           Dashboard
         </Link>
         <Link
-          href="staking"
+          href="/staking"
           className="text-muted-foreground hover:text-foreground"
           prefetch={false}
         >
