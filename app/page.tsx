@@ -1,9 +1,10 @@
 "use client";
 import GetButton from "@/components/getButton";
 import { LoginButton } from "@/components/login";
+import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { OktoContextType, useOkto } from "okto-sdk-react";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -20,6 +21,7 @@ export default function Home() {
     getUserDetails,
     getNftOrderDetails,
   } = useOkto() as OktoContextType;
+
   const idToken = useMemo(() => (session ? session.id_token : null), [session]);
 
   async function handleAuthenticate(): Promise<any> {
@@ -37,6 +39,27 @@ export default function Home() {
         }
       });
     });
+  }
+  async function addUserIdToDb() {
+    const user = await getUserDetails();
+    const email = user.email;
+    const userId = user.user_id;
+    console.log(user);
+    try {
+      const response = await fetch("/api/addUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, userId }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to add user to database");
+      }
+      console.log("User added to database successfully");
+    } catch (error) {
+      console.error("Error adding user to database:", error);
+    }
   }
 
   async function handleLogout() {
@@ -76,6 +99,7 @@ export default function Home() {
           title="getNftOrderDetails"
           apiFn={() => getNftOrderDetails({})}
         />
+        <Button onClick={addUserIdToDb}>Add UserId to DB</Button>
       </div>
     </main>
   );
