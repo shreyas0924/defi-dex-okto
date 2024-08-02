@@ -22,27 +22,13 @@ const Navbar = () => {
         >
           Dashboard
         </Link>
-        <Link
-          href="/staking"
-          className="text-muted-foreground hover:text-foreground"
-          prefetch={false}
-        >
-          Staking
-        </Link>
+
         <Link
           href="/swapping"
           className="text-muted-foreground hover:text-foreground"
           prefetch={false}
         >
           Swapping
-        </Link>
-
-        <Link
-          href="/profile"
-          className="text-muted-foreground hover:text-foreground"
-          prefetch={false}
-        >
-          Profile
         </Link>
       </nav>
       <div className="ml-auto flex items-center gap-4">

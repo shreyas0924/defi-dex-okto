@@ -1,456 +1,345 @@
-// "use client";
-
-// import React, { useState } from "react";
-// import {
-//   PublicKey,
-//   Transaction,
-//   TransactionInstruction,
-// } from "@solana/web3.js";
-// import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-// import Decimal from "decimal.js";
-// import {
-//   Card,
-//   CardHeader,
-//   CardContent,
-//   CardTitle,
-//   CardDescription,
-//   CardFooter,
-// } from "@/components/ui/card";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import {
-//   Select,
-//   SelectTrigger,
-//   SelectValue,
-//   SelectContent,
-//   SelectItem,
-// } from "@/components/ui/select";
-// import { ArrowDownIcon } from "lucide-react";
-// import { useOkto, type OktoContextType } from "okto-sdk-react";
-// import { useQuery } from "@tanstack/react-query";
-
-// const tokens = [
-//   {
-//     symbol: "SOL",
-//     name: "Solana",
-//     mint: "So11111111111111111111111111111111111111112",
-//   },
-//   {
-//     symbol: "USDC",
-//     name: "USD Coin",
-//     mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-//   },
-// ];
-
-// const EXCHANGE_RATE = 0.01;
-// const SWAP_PROGRAM_ID = "4BfBtRGgWq3TuP1t7DEdJneaTgha5ChV5w4NhhtXTEVs";
-
-// export default function SwapPage() {
-//   const {
-//     executeRawTransaction,
-//     getPortfolio,
-//     getWallets,
-//     getRawTransactionStatus,
-//   } = useOkto() as OktoContextType;
-//   const [fromToken, setFromToken] = useState(tokens[0]);
-//   const [toToken, setToToken] = useState(tokens[1]);
-//   const [amount, setAmount] = useState("");
-//   const [txnStatus, setTxnStatus] = useState<any>(null);
-//   const [orderId, setOrderId] = useState("");
-//   const { data: portfolio = { tokens: [] } } = useQuery({
-//     queryKey: ["portfolio"],
-//     queryFn: getPortfolio,
-//     select: (data) => data || { tokens: [] },
-//   });
-
-//   const { data: walletsData } = useQuery({
-//     queryKey: ["wallets"],
-//     queryFn: getWallets,
-//   });
-
-//   const handleSwap = async () => {
-//     try {
-//       if (!walletsData || !walletsData.wallets) {
-//         throw new Error("Wallet data is not available");
-//       }
-
-//       const transaction = new Transaction();
-
-//       const solanaWallet = walletsData.wallets.find(
-//         (w) => w.network_name === "SOLANA_DEVNET"
-//       );
-
-//       if (!solanaWallet || !solanaWallet.address) {
-//         throw new Error("Solana wallet not found");
-//       }
-
-//       const userPublicKey = new PublicKey(solanaWallet.address);
-
-//       const swapInstruction = new TransactionInstruction({
-//         keys: [
-//           { pubkey: userPublicKey, isSigner: true, isWritable: true },
-//           {
-//             pubkey: new PublicKey(fromToken.mint),
-//             isSigner: false,
-//             isWritable: true,
-//           },
-//           {
-//             pubkey: new PublicKey(toToken.mint),
-//             isSigner: false,
-//             isWritable: true,
-//           },
-//           { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-//         ],
-//         programId: new PublicKey(SWAP_PROGRAM_ID),
-//         data: Buffer.concat([
-//           Buffer.from([0]),
-//           Buffer.from(new Decimal(amount).toFixed()),
-//           Buffer.from(new Decimal(EXCHANGE_RATE).toFixed()),
-//         ]),
-//       });
-
-//       transaction.add(swapInstruction);
-
-//       const requestData = {
-//         network_name: "SOLANA_DEVNET",
-//         transaction: {
-//           instructions: transaction.instructions.map((instr) => ({
-//             keys: instr.keys.map((key) => ({
-//               pubkey: key.pubkey.toString(),
-//               isSigner: key.isSigner,
-//               isWritable: key.isWritable,
-//             })),
-//             programId: instr.programId.toString(),
-//             data: Array.from(instr.data),
-//           })),
-//           signers: [userPublicKey.toString()],
-//         },
-//       };
-
-//       const result = await executeRawTransaction(requestData);
-//       console.log("Swap transaction submitted:", result.jobId);
-//       // const status = await getRawTransactionStatus({
-//       //   order_id: "691822e5-2854-435c-98b1-9e2a7367326b",
-//       // });
-//       // console.log("TXN status", status);
-//       // Show success message
-//     } catch (error) {
-//       console.error("Swap failed:", error);
-//       // Show error message
-//     }
-//   };
-
-//   const handleOrderIdStatus = async (orderId: string) => {
-//     const status = await getRawTransactionStatus({ order_id: orderId });
-//     setTxnStatus(status);
-//   };
-
-//   const txnStatusDisplay = txnStatus
-//     ? JSON.stringify(txnStatus, null, 2)
-//     : "No status available";
-
-//   const switchTokens = () => {
-//     setFromToken(toToken);
-//     setToToken(fromToken);
-//   };
-
-//   return (
-//     <div className="container mx-auto p-4">
-//       <Card className="w-full max-w-md mx-auto">
-//         <CardHeader>
-//           <CardTitle>Swap Tokens</CardTitle>
-//           <CardDescription>Exchange your Solana tokens</CardDescription>
-//         </CardHeader>
-//         <CardContent>
-//           <div className="space-y-4">
-//             <div>
-//               <label className="block text-sm font-medium mb-1">From</label>
-//               <div className="flex space-x-2">
-//                 <Select
-//                   value={fromToken.symbol}
-//                   onValueChange={(value) =>
-//                     setFromToken(tokens.find((t) => t.symbol === value)!)
-//                   }
-//                 >
-//                   <SelectTrigger className="w-[180px]">
-//                     <SelectValue placeholder="Select token" />
-//                   </SelectTrigger>
-//                   <SelectContent>
-//                     {tokens.map((token) => (
-//                       <SelectItem key={token.symbol} value={token.symbol}>
-//                         {token.name}
-//                       </SelectItem>
-//                     ))}
-//                   </SelectContent>
-//                 </Select>
-//                 <Input
-//                   type="number"
-//                   placeholder="0.00"
-//                   value={amount}
-//                   onChange={(e) => setAmount(e.target.value)}
-//                 />
-//               </div>
-//             </div>
-//             <div className="flex justify-center">
-//               <Button variant="ghost" size="icon" onClick={switchTokens}>
-//                 <ArrowDownIcon className="h-6 w-6" />
-//               </Button>
-//             </div>
-//             <div>
-//               <label className="block text-sm font-medium mb-1">To</label>
-//               <Select
-//                 value={toToken.symbol}
-//                 onValueChange={(value) =>
-//                   setToToken(tokens.find((t) => t.symbol === value)!)
-//                 }
-//               >
-//                 <SelectTrigger className="w-full">
-//                   <SelectValue placeholder="Select token" />
-//                 </SelectTrigger>
-//                 <SelectContent>
-//                   {tokens.map((token) => (
-//                     <SelectItem key={token.symbol} value={token.symbol}>
-//                       {token.name}
-//                     </SelectItem>
-//                   ))}
-//                 </SelectContent>
-//               </Select>
-//             </div>
-//           </div>
-//         </CardContent>
-//         <CardFooter>
-//           <Button className="w-full" onClick={handleSwap}>
-//             Swap
-//           </Button>
-//         </CardFooter>
-
-//         <Input
-//           type="text"
-//           value={txnStatus}
-//           onChange={(e) => setOrderId(e.currentTarget.value)}
-//         />
-//         <Button onClick={() => handleOrderIdStatus(orderId)}>
-//           Check ORderID
-//         </Button>
-//         <pre>{txnStatusDisplay}</pre>
-//       </Card>
-//     </div>
-//   );
-// }
-
 "use client";
 
-import React, { useState } from "react";
-import { PublicKey, VersionedTransaction } from "@solana/web3.js";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { ArrowDownIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { useOkto, type OktoContextType } from "okto-sdk-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SUPPORTED_TOKENS, TokenDetails } from "@/lib/tokens";
+import { TokenWithBalance, useTokens } from "@/hooks/useToken";
 import { useQuery } from "@tanstack/react-query";
 
-const JUPITER_QUOTE_API = "https://quote-api.jup.ag/v6/quote";
-const JUPITER_SWAP_API = "https://quote-api.jup.ag/v6/swap";
-
-const tokens = [
-  {
-    symbol: "SOL",
-    name: "Solana",
-    mint: "So11111111111111111111111111111111111111112",
-  },
-  {
-    symbol: "USDC",
-    name: "USD Coin",
-    mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  },
-];
-
-export default function SwapPage() {
+function Swap({
+  tokenBalances,
+  publicKey,
+}: {
+  tokenBalances: {
+    totalBalance: number;
+    tokens: TokenWithBalance[];
+  } | null;
+  publicKey: string | null;
+}) {
+  const [baseAsset, setBaseAsset] = useState(SUPPORTED_TOKENS[0]);
+  const [quoteAsset, setQuoteAsset] = useState(SUPPORTED_TOKENS[1]);
+  const [baseAmount, setBaseAmount] = useState<string>("");
+  const [quoteAmount, setQuoteAmount] = useState<string>("");
+  const [fetchingQuote, setFetchingQuote] = useState(false);
+  const [quoteResponse, setQuoteResponse] = useState<any>(null);
+  const [txnStatus, setTxnStatus] = useState<any>(null);
+  const [orderId, setOrderId] = useState<string>("");
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const {
     executeRawTransaction,
     getPortfolio,
     getWallets,
     getRawTransactionStatus,
   } = useOkto() as OktoContextType;
-  const [fromToken, setFromToken] = useState(tokens[0]);
-  const [toToken, setToToken] = useState(tokens[1]);
-  const [amount, setAmount] = useState("");
-  const [txnStatus, setTxnStatus] = useState<any>(null);
-  const [orderId, setOrderId] = useState("");
-  const { data: portfolio = { tokens: [] } } = useQuery({
-    queryKey: ["portfolio"],
-    queryFn: getPortfolio,
-    select: (data) => data || { tokens: [] },
-  });
 
-  const { data: walletsData } = useQuery({
-    queryKey: ["wallets"],
-    queryFn: getWallets,
-  });
-  const handleOrderIdStatus = async (orderId: string) => {
-    const status = await getRawTransactionStatus({ order_id: orderId });
-    setTxnStatus(status);
+  const checkOrderStatus = async () => {
+    if (!orderId) {
+      alert("Order ID is not available");
+      return;
+    }
+
+    setIsCheckingStatus(true);
+    let attempts = 0;
+    const maxAttempts = 10; // Adjust as needed
+
+    const checkStatus = async () => {
+      try {
+        const status = await getRawTransactionStatus({ order_id: orderId });
+        setTxnStatus(status);
+
+        if (status.jobs[0].status === "RUNNING" && attempts < maxAttempts) {
+          attempts++;
+          setTimeout(checkStatus, 5000); // Check again after 5 seconds
+        } else {
+          setIsCheckingStatus(false);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error while fetching transaction status");
+        setIsCheckingStatus(false);
+      }
+    };
+
+    checkStatus();
   };
-  const txnStatusDisplay = txnStatus
-    ? JSON.stringify(txnStatus, null, 2)
-    : "No status available";
-  const handleSwap = async () => {
-    try {
-      if (!walletsData || !walletsData.wallets) {
-        throw new Error("Wallet data is not available");
-      }
-
-      const solanaWallet = walletsData.wallets.find(
-        (w) => w.network_name === "SOLANA_DEVNET"
-      );
-      if (!solanaWallet) {
-        throw new Error("Solana wallet not found");
-      }
-
-      const userPublicKey = solanaWallet.address;
-
-      const quoteResponse = await (
-        await fetch(
-          `${JUPITER_QUOTE_API}?inputMint=${fromToken.mint}&outputMint=${toToken.mint}&amount=${amount}&slippageBps=50`
-        )
-      ).json();
-
-      const { swapTransaction } = await (
-        await fetch(JUPITER_SWAP_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            quoteResponse,
-            userPublicKey,
-            wrapAndUnwrapSol: true,
-          }),
-        })
-      ).json();
-
-      const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-      const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-
-      const requestData = {
-        network_name: "SOLANA_DEVNET",
-        transaction: {
-          instructions: transaction.message.compiledInstructions.map(
-            (instr) => ({
-              programId: instr.programIdIndex.toString(),
-              accounts: instr.accountKeyIndexes.map((index) =>
-                index.toString()
-              ),
-              data: Array.from(instr.data),
-            })
-          ),
-          signers: [userPublicKey],
-        },
-      };
-
-      const result = await executeRawTransaction(requestData);
-      console.log("Swap transaction submitted:", result.jobId);
-    } catch (error) {
-      console.error("Swap failed:", error);
+  const getStatusMessage = (status: string) => {
+    switch (status) {
+      case "RUNNING":
+        return "Transaction is being processed...";
+      case "COMPLETED":
+        return "Transaction completed successfully!";
+      case "FAILED":
+        return "Transaction failed. Please try again.";
+      default:
+        return "Unknown status";
     }
   };
 
-  const switchTokens = () => {
-    setFromToken(toToken);
-    setToToken(fromToken);
+  const balance = tokenBalances
+    ? tokenBalances.tokens.find((x) => x.name === baseAsset.name)?.balance
+    : 0;
+
+  useEffect(() => {
+    if (!baseAmount || !publicKey) return;
+    setFetchingQuote(true);
+    axios
+      .get(
+        `https://quote-api.jup.ag/v6/quote?inputMint=${
+          baseAsset.mint
+        }&outputMint=${quoteAsset.mint}&amount=${
+          Number(baseAmount) * 10 ** baseAsset.decimals
+        }&slippageBps=50`
+      )
+      .then((res) => {
+        setQuoteAmount(
+          (
+            Number(res.data.outAmount) / Number(10 ** quoteAsset.decimals)
+          ).toString()
+        );
+        setFetchingQuote(false);
+        setQuoteResponse(res.data);
+      })
+      .catch(() => {
+        setFetchingQuote(false);
+      });
+  }, [baseAsset, quoteAsset, baseAmount, publicKey]);
+
+  const handleSwap = async () => {
+    if (!publicKey) {
+      alert("Please connect your wallet first");
+      return;
+    }
+    try {
+      if (!quoteResponse) {
+        alert("No quote response available");
+        return;
+      }
+
+      // Fetch raw transaction data from the API
+      const { data } = await axios.post("/api/swap", {
+        quoteResponse,
+        publicKey,
+      });
+
+      // Execute the raw transaction using Okto SDK
+      const result = await executeRawTransaction({
+        network_name: "SOLANA_DEVNET",
+        transaction: data.rawTransaction,
+      });
+
+      if (result.jobId) {
+        setOrderId(result.jobId);
+        alert("Swap transaction submitted!");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error while sending the transaction");
+    }
   };
 
+  const txnStatusDisplay = txnStatus
+    ? JSON.stringify(txnStatus, null, 2)
+    : "No status available";
+
   return (
-    <div className="container mx-auto p-4">
-      <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Swap Tokens</CardTitle>
-          <CardDescription>Exchange your Solana tokens</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">From</label>
-              <div className="flex space-x-2">
-                <Select
-                  value={fromToken.symbol}
-                  onValueChange={(value) =>
-                    setFromToken(tokens.find((t) => t.symbol === value)!)
-                  }
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select token" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tokens.map((token) => (
-                      <SelectItem key={token.symbol} value={token.symbol}>
-                        {token.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <Button variant="ghost" size="icon" onClick={switchTokens}>
-                <ArrowDownIcon className="h-6 w-6" />
-              </Button>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">To</label>
-              <Select
-                value={toToken.symbol}
-                onValueChange={(value) =>
-                  setToToken(tokens.find((t) => t.symbol === value)!)
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select token" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tokens.map((token) => (
-                    <SelectItem key={token.symbol} value={token.symbol}>
-                      {token.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <div className="p-12">
+      <div className="text-2xl font-bold pb-4">Swap Tokens</div>
+
+      <SwapInputRow
+        amount={baseAmount}
+        onAmountChange={(value: string) => setBaseAmount(value)}
+        onSelect={(asset: TokenDetails) => setBaseAsset(asset)}
+        selectedToken={baseAsset}
+        title={"You pay:"}
+        topBorderEnabled={true}
+        bottomBorderEnabled={false}
+        subtitle={
+          <div className="text-slate-500 pt-1 text-sm pl-1 flex">
+            <div className="font-normal pr-1">Current Balance:</div>
+            <div className="font-semibold">
+              {balance} {baseAsset.name}
             </div>
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={handleSwap}>
-            Swap
-          </Button>
-        </CardFooter>
-        <Input
-          type="text"
-          value={txnStatus}
-          onChange={(e) => setOrderId(e.currentTarget.value)}
-        />
-        <Button onClick={() => handleOrderIdStatus(orderId)}>
-          Check ORderID
+        }
+      />
+
+      <div className="flex justify-center">
+        <div
+          onClick={() => {
+            let baseAssetTemp = baseAsset;
+            setBaseAsset(quoteAsset);
+            setQuoteAsset(baseAssetTemp);
+          }}
+          className="cursor-pointer rounded-full w-10 h-10 border absolute mt-[-20px] text-black flex justify-center pt-2"
+        >
+          <SwapIcon />
+        </div>
+      </div>
+
+      <SwapInputRow
+        inputLoading={fetchingQuote}
+        inputDisabled={true}
+        amount={quoteAmount}
+        onSelect={(asset) => setQuoteAsset(asset)}
+        selectedToken={quoteAsset}
+        title={"You receive"}
+        topBorderEnabled={false}
+        bottomBorderEnabled={true}
+      />
+
+      <div className="flex justify-end pt-4">
+        <Button onClick={handleSwap} disabled={!publicKey}>
+          {publicKey ? "Swap" : "Connect Wallet"}
         </Button>
-        <pre>{txnStatusDisplay}</pre>
-      </Card>
+      </div>
+
+      <Input
+        type="text"
+        value={orderId}
+        onChange={(e) => setOrderId(e.currentTarget.value)}
+        placeholder="Enter Order ID"
+      />
+      {txnStatus && (
+        <div className="mt-4 ">
+          <h3 className="text-lg font-semibold">Transaction Status:</h3>
+          <p>{getStatusMessage(txnStatus.jobs[0].status)}</p>
+          {txnStatus.jobs[0].transaction_hash && (
+            <p>Transaction Hash: {txnStatus.jobs[0].transaction_hash}</p>
+          )}
+        </div>
+      )}
+
+      <Button onClick={checkOrderStatus} disabled={isCheckingStatus}>
+        {isCheckingStatus ? "Checking Status..." : "Check Order Status"}
+      </Button>
     </div>
   );
+}
+
+function SwapInputRow({
+  onSelect,
+  amount,
+  onAmountChange,
+  selectedToken,
+  title,
+  subtitle,
+  topBorderEnabled,
+  bottomBorderEnabled,
+  inputDisabled,
+  inputLoading,
+}: {
+  onSelect: (asset: TokenDetails) => void;
+  selectedToken: TokenDetails;
+  title: string;
+  subtitle?: React.ReactNode;
+  topBorderEnabled: boolean;
+  bottomBorderEnabled: boolean;
+  amount?: string;
+  onAmountChange?: (value: string) => void;
+  inputDisabled?: boolean;
+  inputLoading?: boolean;
+}) {
+  return (
+    <div
+      className={`border flex justify-between p-6 ${
+        topBorderEnabled ? "rounded-t-xl" : ""
+      } ${bottomBorderEnabled ? "rounded-b-xl" : ""}`}
+    >
+      <div>
+        <div className="text-xs font-semibold mb-1">{title}</div>
+        <AssetSelector selectedToken={selectedToken} onSelect={onSelect} />
+        {subtitle}
+      </div>
+      <div>
+        <input
+          disabled={inputDisabled}
+          onChange={(e) => onAmountChange?.(e.target.value)}
+          placeholder="0"
+          type="text"
+          className=" p-6 outline-none text-4xl"
+          dir="rtl"
+          value={inputLoading ? "Loading" : amount}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AssetSelector({
+  selectedToken,
+  onSelect,
+}: {
+  selectedToken: TokenDetails;
+  onSelect: (asset: TokenDetails) => void;
+}) {
+  return (
+    <div className="w-24">
+      <select
+        onChange={(e) => {
+          const selectedToken = SUPPORTED_TOKENS.find(
+            (x: TokenDetails) => x.name === e.target.value
+          );
+          if (selectedToken) {
+            onSelect(selectedToken);
+          }
+        }}
+        id="countries"
+        className=" border ext-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      >
+        {SUPPORTED_TOKENS.map((token: TokenDetails) => (
+          <option key={token.name} selected={selectedToken.name === token.name}>
+            {token.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1.5"
+      stroke="currentColor"
+      className="size-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"
+      />
+    </svg>
+  );
+}
+
+export default function SwappingPage() {
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const { getWallets } = useOkto() as OktoContextType;
+  const { data: walletsData, isLoading } = useQuery({
+    queryKey: ["wallets"],
+    queryFn: getWallets,
+  });
+
+  const solanaWallet = walletsData?.wallets.find(
+    (wallet) => wallet.network_name === "SOLANA_DEVNET"
+  );
+
+  useEffect(() => {
+    if (solanaWallet) {
+      setPublicKey(solanaWallet.address);
+    }
+  }, [solanaWallet]);
+
+  const { tokenBalances, loading, error } = useTokens(publicKey);
+
+  if (isLoading || loading) return <div>Loading...</div>;
+  if (error) return <div>Error fetching token balances</div>;
+
+  return <Swap tokenBalances={tokenBalances} publicKey={publicKey} />;
 }
