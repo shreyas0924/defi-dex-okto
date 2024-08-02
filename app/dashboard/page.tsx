@@ -56,27 +56,6 @@ export default function Dashboard() {
     queryFn: getWallets,
   });
 
-  // const combinedWalletData = React.useMemo(() => {
-  //   if (!walletsData?.wallets || !portfolio) return [];
-
-  //   return walletsData.wallets.map((wallet) => {
-  //     const portfolioItems = portfolio.filter(
-  //       (item) => item.network_name === wallet.network_name
-  //     );
-
-  //     const balance = portfolioItems
-  //       .reduce((total, item) => {
-  //         return total + parseFloat(item.quantity);
-  //       }, 0)
-  //       .toFixed(8);
-
-  //     return {
-  //       ...wallet,
-  //       balance: balance,
-  //     };
-  //   });
-  // }, [walletsData, portfolio]);
-
   const recentTransactions = (orderHistoryData?.jobs || []).slice(0, 5);
 
   const totalEarningsInINR = portfolio.reduce((acc, token) => {
@@ -88,7 +67,7 @@ export default function Dashboard() {
   return (
     <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
       <div className="max-w-6xl w-full mx-auto grid gap-8">
-        {portfolio}
+        {portfolioTokens.tokens.map((t) => t.network_name)}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-r from-[#7928CA] to-[#FF0080] text-white">
             <CardHeader className="flex flex-col items-start gap-2">

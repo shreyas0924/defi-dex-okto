@@ -1,119 +1,345 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { getOrca, OrcaPoolConfig, OrcaU64 } from "@orca-so/sdk";
-import Decimal from "decimal.js";
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
-import { ArrowDownIcon } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { useOkto, type OktoContextType } from "okto-sdk-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SUPPORTED_TOKENS, TokenDetails } from "@/lib/tokens";
+import { TokenWithBalance, useTokens } from "@/hooks/useToken";
+import { useQuery } from "@tanstack/react-query";
 
-export default function SwapPage() {
-  // const { executeRawTransaction } = useOkto() as OktoContextType;
-  // const [fromToken, setFromToken] = useState(tokens[0]);
-  // const [toToken, setToToken] = useState(tokens[1]);
-  // const [amount, setAmount] = useState("");
-  // const [balances, setBalances] = useState<Record<string, number>>({});
+function Swap({
+  tokenBalances,
+  publicKey,
+}: {
+  tokenBalances: {
+    totalBalance: number;
+    tokens: TokenWithBalance[];
+  } | null;
+  publicKey: string | null;
+}) {
+  const [baseAsset, setBaseAsset] = useState(SUPPORTED_TOKENS[0]);
+  const [quoteAsset, setQuoteAsset] = useState(SUPPORTED_TOKENS[1]);
+  const [baseAmount, setBaseAmount] = useState<string>("");
+  const [quoteAmount, setQuoteAmount] = useState<string>("");
+  const [fetchingQuote, setFetchingQuote] = useState(false);
+  const [quoteResponse, setQuoteResponse] = useState<any>(null);
+  const [txnStatus, setTxnStatus] = useState<any>(null);
+  const [orderId, setOrderId] = useState<string>("");
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const {
+    executeRawTransaction,
+    getPortfolio,
+    getWallets,
+    getRawTransactionStatus,
+  } = useOkto() as OktoContextType;
 
-  // const fetchBalances = async () => {
-  //   const newBalances: Record<string, number> = {};
-  //   for (const token of tokens) {
-  //     if (token.symbol === "SOL") {
-  //       const balance = await connection.getBalance(new PublicKey(token.mint));
-  //       newBalances[token.symbol] = balance / 1e9;
-  //     } else {
-  //       const tokenAccount = await connection.getTokenAccountsByOwner(
-  //         new PublicKey(token.mint),
-  //         { mint: new PublicKey(token.mint) }
-  //       );
-  //       if (tokenAccount.value.length > 0) {
-  //         const balance = await connection.getTokenAccountBalance(
-  //           tokenAccount.value[0].pubkey
-  //         );
-  //         newBalances[token.symbol] = parseFloat(balance.value.amount) / 1e6;
-  //       } else {
-  //         newBalances[token.symbol] = 0;
-  //       }
-  //     }
-  //   }
-  //   setBalances(newBalances);
-  // };
+  const checkOrderStatus = async () => {
+    if (!orderId) {
+      alert("Order ID is not available");
+      return;
+    }
 
-  // const handleSwap = async () => {
-  //   const orca = getOrca(connection);
-  //   const fromMint = new PublicKey(fromToken.mint);
-  //   const toMint = new PublicKey(toToken.mint);
+    setIsCheckingStatus(true);
+    let attempts = 0;
+    const maxAttempts = 10; // Adjust as needed
 
-  //   try {
-  //     const pool = orca.getPool(OrcaPoolConfig.SOL_USDC);
-  //     const fromTokenAmount = OrcaU64.fromDecimal(new Decimal(amount));
-  //     const quote = await pool.getQuote(pool.getTokenA(), fromTokenAmount);
-  //     const minimumAmountOut = quote.getMinOutputAmount();
-  //     const swapPayload = await pool.swap(
-  //       pool.getTokenA(),
-  //       fromTokenAmount,
-  //       minimumAmountOut,
-  //       toMint
-  //     );
+    const checkStatus = async () => {
+      try {
+        const status = await getRawTransactionStatus({ order_id: orderId });
+        setTxnStatus(status);
 
-  //     const { transaction, signers } = swapPayload;
-  //     transaction.partialSign(...signers);
+        if (status.jobs[0].status === "RUNNING" && attempts < maxAttempts) {
+          attempts++;
+          setTimeout(checkStatus, 5000); // Check again after 5 seconds
+        } else {
+          setIsCheckingStatus(false);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error while fetching transaction status");
+        setIsCheckingStatus(false);
+      }
+    };
 
-  //     const requestData = {
-  //       network_name: "SOLANA_DEVNET", // or your network
-  //       transaction: {
-  //         instructions: transaction.instructions.map(
-  //           (instr: TransactionInstruction) => ({
-  //             keys: instr.keys.map((key) => ({
-  //               pubkey: key.pubkey.toString(),
-  //               isSigner: key.isSigner,
-  //               isWritable: key.isWritable,
-  //             })),
-  //             programId: instr.programId.toString(),
-  //             data: Array.from(instr.data),
-  //           })
-  //         ),
-  //         signers: signers.map((signer) => signer.publicKey.toString()),
-  //       },
-  //     };
+    checkStatus();
+  };
+  const getStatusMessage = (status: string) => {
+    switch (status) {
+      case "RUNNING":
+        return "Transaction is being processed...";
+      case "COMPLETED":
+        return "Transaction completed successfully!";
+      case "FAILED":
+        return "Transaction failed. Please try again.";
+      default:
+        return "Unknown status";
+    }
+  };
 
-  //     executeRawTransaction(requestData)
-  //       .then((result) => {
-  //         console.log(result.jobId);
-  //         fetchBalances();
-  //         // Show success message
-  //       })
-  //       .catch((error) => {
-  //         console.error("Swap failed:", error);
-  //         // Show error message
-  //       });
-  //   } catch (error) {
-  //     console.error("Swap failed:", error);
-  //     // Show error message
-  //   }
-  // };
+  const balance = tokenBalances
+    ? tokenBalances.tokens.find((x) => x.name === baseAsset.name)?.balance
+    : 0;
 
-  // const switchTokens = () => {
-  //   setFromToken(toToken);
-  //   setToToken(fromToken);
-  // };
+  useEffect(() => {
+    if (!baseAmount || !publicKey) return;
+    setFetchingQuote(true);
+    axios
+      .get(
+        `https://quote-api.jup.ag/v6/quote?inputMint=${
+          baseAsset.mint
+        }&outputMint=${quoteAsset.mint}&amount=${
+          Number(baseAmount) * 10 ** baseAsset.decimals
+        }&slippageBps=50`
+      )
+      .then((res) => {
+        setQuoteAmount(
+          (
+            Number(res.data.outAmount) / Number(10 ** quoteAsset.decimals)
+          ).toString()
+        );
+        setFetchingQuote(false);
+        setQuoteResponse(res.data);
+      })
+      .catch(() => {
+        setFetchingQuote(false);
+      });
+  }, [baseAsset, quoteAsset, baseAmount, publicKey]);
 
-  return <div className="container mx-auto p-4">Swap</div>;
+  const handleSwap = async () => {
+    if (!publicKey) {
+      alert("Please connect your wallet first");
+      return;
+    }
+    try {
+      if (!quoteResponse) {
+        alert("No quote response available");
+        return;
+      }
+
+      // Fetch raw transaction data from the API
+      const { data } = await axios.post("/api/swap", {
+        quoteResponse,
+        publicKey,
+      });
+
+      // Execute the raw transaction using Okto SDK
+      const result = await executeRawTransaction({
+        network_name: "SOLANA_DEVNET",
+        transaction: data.rawTransaction,
+      });
+
+      if (result.jobId) {
+        setOrderId(result.jobId);
+        alert("Swap transaction submitted!");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error while sending the transaction");
+    }
+  };
+
+  const txnStatusDisplay = txnStatus
+    ? JSON.stringify(txnStatus, null, 2)
+    : "No status available";
+
+  return (
+    <div className="p-12">
+      <div className="text-2xl font-bold pb-4">Swap Tokens</div>
+
+      <SwapInputRow
+        amount={baseAmount}
+        onAmountChange={(value: string) => setBaseAmount(value)}
+        onSelect={(asset: TokenDetails) => setBaseAsset(asset)}
+        selectedToken={baseAsset}
+        title={"You pay:"}
+        topBorderEnabled={true}
+        bottomBorderEnabled={false}
+        subtitle={
+          <div className="text-slate-500 pt-1 text-sm pl-1 flex">
+            <div className="font-normal pr-1">Current Balance:</div>
+            <div className="font-semibold">
+              {balance} {baseAsset.name}
+            </div>
+          </div>
+        }
+      />
+
+      <div className="flex justify-center">
+        <div
+          onClick={() => {
+            let baseAssetTemp = baseAsset;
+            setBaseAsset(quoteAsset);
+            setQuoteAsset(baseAssetTemp);
+          }}
+          className="cursor-pointer rounded-full w-10 h-10 border absolute mt-[-20px] text-black flex justify-center pt-2"
+        >
+          <SwapIcon />
+        </div>
+      </div>
+
+      <SwapInputRow
+        inputLoading={fetchingQuote}
+        inputDisabled={true}
+        amount={quoteAmount}
+        onSelect={(asset) => setQuoteAsset(asset)}
+        selectedToken={quoteAsset}
+        title={"You receive"}
+        topBorderEnabled={false}
+        bottomBorderEnabled={true}
+      />
+
+      <div className="flex justify-end pt-4">
+        <Button onClick={handleSwap} disabled={!publicKey}>
+          {publicKey ? "Swap" : "Connect Wallet"}
+        </Button>
+      </div>
+
+      <Input
+        type="text"
+        value={orderId}
+        onChange={(e) => setOrderId(e.currentTarget.value)}
+        placeholder="Enter Order ID"
+      />
+      {txnStatus && (
+        <div className="mt-4 ">
+          <h3 className="text-lg font-semibold">Transaction Status:</h3>
+          <p>{getStatusMessage(txnStatus.jobs[0].status)}</p>
+          {txnStatus.jobs[0].transaction_hash && (
+            <p>Transaction Hash: {txnStatus.jobs[0].transaction_hash}</p>
+          )}
+        </div>
+      )}
+
+      <Button onClick={checkOrderStatus} disabled={isCheckingStatus}>
+        {isCheckingStatus ? "Checking Status..." : "Check Order Status"}
+      </Button>
+    </div>
+  );
+}
+
+function SwapInputRow({
+  onSelect,
+  amount,
+  onAmountChange,
+  selectedToken,
+  title,
+  subtitle,
+  topBorderEnabled,
+  bottomBorderEnabled,
+  inputDisabled,
+  inputLoading,
+}: {
+  onSelect: (asset: TokenDetails) => void;
+  selectedToken: TokenDetails;
+  title: string;
+  subtitle?: React.ReactNode;
+  topBorderEnabled: boolean;
+  bottomBorderEnabled: boolean;
+  amount?: string;
+  onAmountChange?: (value: string) => void;
+  inputDisabled?: boolean;
+  inputLoading?: boolean;
+}) {
+  return (
+    <div
+      className={`border flex justify-between p-6 ${
+        topBorderEnabled ? "rounded-t-xl" : ""
+      } ${bottomBorderEnabled ? "rounded-b-xl" : ""}`}
+    >
+      <div>
+        <div className="text-xs font-semibold mb-1">{title}</div>
+        <AssetSelector selectedToken={selectedToken} onSelect={onSelect} />
+        {subtitle}
+      </div>
+      <div>
+        <input
+          disabled={inputDisabled}
+          onChange={(e) => onAmountChange?.(e.target.value)}
+          placeholder="0"
+          type="text"
+          className=" p-6 outline-none text-4xl"
+          dir="rtl"
+          value={inputLoading ? "Loading" : amount}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AssetSelector({
+  selectedToken,
+  onSelect,
+}: {
+  selectedToken: TokenDetails;
+  onSelect: (asset: TokenDetails) => void;
+}) {
+  return (
+    <div className="w-24">
+      <select
+        onChange={(e) => {
+          const selectedToken = SUPPORTED_TOKENS.find(
+            (x: TokenDetails) => x.name === e.target.value
+          );
+          if (selectedToken) {
+            onSelect(selectedToken);
+          }
+        }}
+        id="countries"
+        className=" border ext-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      >
+        {SUPPORTED_TOKENS.map((token: TokenDetails) => (
+          <option key={token.name} selected={selectedToken.name === token.name}>
+            {token.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth="1.5"
+      stroke="currentColor"
+      className="size-6"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"
+      />
+    </svg>
+  );
+}
+
+export default function SwappingPage() {
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const { getWallets } = useOkto() as OktoContextType;
+  const { data: walletsData, isLoading } = useQuery({
+    queryKey: ["wallets"],
+    queryFn: getWallets,
+  });
+
+  const solanaWallet = walletsData?.wallets.find(
+    (wallet) => wallet.network_name === "SOLANA_DEVNET"
+  );
+
+  useEffect(() => {
+    if (solanaWallet) {
+      setPublicKey(solanaWallet.address);
+    }
+  }, [solanaWallet]);
+
+  const { tokenBalances, loading, error } = useTokens(publicKey);
+
+  if (isLoading || loading) return <div>Loading...</div>;
+  if (error) return <div>Error fetching token balances</div>;
+
+  return <Swap tokenBalances={tokenBalances} publicKey={publicKey} />;
 }
