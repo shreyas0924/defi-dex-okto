@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Connection, Keypair, VersionedTransaction } from "@solana/web3.js";
+import { connection } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
-  const connection = new Connection(
-    "https://mainnet.helius-rpc.com/?api-key=f51ac02d-ad2a-4a65-8874-dbbdf10182bd"
-  );
   const data: {
     quoteResponse: any;
     publicKey: any;
@@ -28,6 +26,7 @@ export async function POST(req: NextRequest) {
     })
   ).json();
 
+  console.log(swapTransaction);
   const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
   const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
   const latestBlockHash = await connection.getLatestBlockhash();
