@@ -1,106 +1,52 @@
 "use client";
-import GetButton from "@/components/getButton";
-import { LoginButton } from "@/components/login";
-import { Button } from "@/components/ui/button";
-import { useSession } from "next-auth/react";
+
+import { useSession, signIn } from "next-auth/react";
 import { OktoContextType, useOkto } from "okto-sdk-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { data: session } = useSession();
-  const {
-    isLoggedIn,
-    authenticate,
-    logOut,
-    getPortfolio,
-    getWallets,
-    createWallet,
-    getSupportedNetworks,
-    getSupportedTokens,
-    orderHistory,
-    getUserDetails,
-    getNftOrderDetails,
-  } = useOkto() as OktoContextType;
-
-  const idToken = useMemo(() => (session ? session.id_token : null), [session]);
-
-  async function handleAuthenticate(): Promise<any> {
-    if (!idToken) {
-      return { result: false, error: "No google login" };
-    }
-    return new Promise((resolve) => {
-      authenticate(idToken, (result: any, error: any) => {
-        if (result) {
-          console.log("Authentication successful");
-          resolve({ result: true });
-        } else if (error) {
-          console.error("Authentication error:", error);
-          resolve({ result: false, error });
-        }
-      });
-    });
-  }
-  async function addUserIdToDb() {
-    const user = await getUserDetails();
-    const email = user.email;
-    const userId = user.user_id;
-    console.log(user);
-    try {
-      const response = await fetch("/api/addUser", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, userId }),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to add user to database");
-      }
-      console.log("User added to database successfully");
-    } catch (error) {
-      console.error("Error adding user to database:", error);
-    }
-  }
-
-  async function handleLogout() {
-    try {
-      logOut();
-      return { result: "logout success" };
-    } catch (error) {
-      return { result: "logout failed" };
-    }
-  }
+  const router = useRouter();
+  const { authenticate } = useOkto() as OktoContextType;
 
   useEffect(() => {
-    if (isLoggedIn) {
-      console.log("Okto is authenticated");
+    if (session) {
+      handleAuthenticate();
     }
-  }, [isLoggedIn]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+
+  async function handleAuthenticate() {
+    if (session?.id_token && typeof session.id_token === "string") {
+      try {
+        await new Promise((resolve, reject) => {
+          authenticate(session.id_token as string, (result, error) => {
+            if (result) {
+              resolve(result);
+            } else {
+              reject(error);
+            }
+          });
+        });
+        router.push("/dashboard");
+      } catch (error) {
+        console.error("Authentication error:", error);
+      }
+    }
+  }
+
+  const handleSignIn = () => {
+    signIn("google");
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center space-y-6 p-12 bg-violet-200">
-      <div className="text-black font-bold text-3xl mb-8">Okto SDK</div>
-      <div className="space-y-6 w-full max-w-lg"></div>
-
-      <div className="grid grid-cols-2 gap-4 w-full max-w-lg mt-8">
-        <LoginButton />
-        <GetButton title="Okto Authenticate" apiFn={handleAuthenticate} />
-        <GetButton title="Okto Log out" apiFn={handleLogout} />
-        <GetButton title="getPortfolio" apiFn={getPortfolio} />
-        <GetButton title="getSupportedNetworks" apiFn={getSupportedNetworks} />
-        <GetButton title="getSupportedTokens" apiFn={getSupportedTokens} />
-        <GetButton title="getUserDetails" apiFn={getUserDetails} />{" "}
-        {/* Pass the idToken */}
-        <GetButton title="getWallets" apiFn={getWallets} />
-        <GetButton title="createWallet" apiFn={createWallet} />
-        <GetButton title="orderHistory" apiFn={() => orderHistory({})} />
-        {/* <GetButton title="getRawTransactionStatus" apiFn={() => getRawTransactionStatus({})} /> */}
-        <GetButton
-          title="getNftOrderDetails"
-          apiFn={() => getNftOrderDetails({})}
-        />
-        <Button onClick={addUserIdToDb}>Add UserId to DB</Button>
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-center ">
+      <div className=" font-bold text-3xl mb-8">Welcome to Okto SDK</div>
+      <Button onClick={handleSignIn} className="px-6 py-3 text-lg">
+        Sign in with Google
+      </Button>
     </main>
   );
 }

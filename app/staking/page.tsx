@@ -127,7 +127,9 @@ export default function StakingPage() {
           </Button>
         </CardFooter>
       </Card> */}
-      Staking
+      <div className="text-center text-4xl font-semibold my-10">
+        Staking Coming Soon...
+      </div>
     </div>
   );
 }

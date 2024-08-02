@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { SUPPORTED_TOKENS, TokenDetails } from "@/lib/tokens";
 import { TokenWithBalance, useTokens } from "@/hooks/useToken";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowDownUp } from "lucide-react";
 
 function Swap({
   tokenBalances,
@@ -152,8 +153,7 @@ function Swap({
 
   return (
     <div className="p-12">
-      <div className="text-2xl font-bold pb-4">Swap Tokens</div>
-
+      <div className="text-2xl font-bold pb-4 w-1/2">Swap Tokens</div>
       <SwapInputRow
         amount={baseAmount}
         onAmountChange={(value: string) => setBaseAmount(value)}
@@ -171,7 +171,6 @@ function Swap({
           </div>
         }
       />
-
       <div className="flex justify-center">
         <div
           onClick={() => {
@@ -179,12 +178,11 @@ function Swap({
             setBaseAsset(quoteAsset);
             setQuoteAsset(baseAssetTemp);
           }}
-          className="cursor-pointer rounded-full w-10 h-10 border absolute mt-[-20px] text-black flex justify-center pt-2"
+          className="cursor-pointer rounded-full w-10 h-10 border absolute mt-[-20px]  flex justify-center pt-2"
         >
-          <SwapIcon />
+          <ArrowDownUp />
         </div>
       </div>
-
       <SwapInputRow
         inputLoading={fetchingQuote}
         inputDisabled={true}
@@ -195,13 +193,11 @@ function Swap({
         topBorderEnabled={false}
         bottomBorderEnabled={true}
       />
-
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end py-6">
         <Button onClick={handleSwap} disabled={!publicKey}>
           {publicKey ? "Swap" : "Connect Wallet"}
         </Button>
       </div>
-
       <Input
         type="text"
         value={orderId}
@@ -209,18 +205,26 @@ function Swap({
         placeholder="Enter Order ID"
       />
       {txnStatus && (
-        <div className="mt-4 ">
-          <h3 className="text-lg font-semibold">Transaction Status:</h3>
-          <p>{getStatusMessage(txnStatus.jobs[0].status)}</p>
+        <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+          <h3 className="text-xl font-semibold mb-4">Transaction Status:</h3>
+          <p className="mb-2">{getStatusMessage(txnStatus.jobs[0].status)}</p>
           {txnStatus.jobs[0].transaction_hash && (
-            <p>Transaction Hash: {txnStatus.jobs[0].transaction_hash}</p>
+            <p className="mb-4">
+              <span className="font-medium">Transaction Hash:</span>{" "}
+              {txnStatus.jobs[0].transaction_hash}
+            </p>
           )}
         </div>
       )}
-
-      <Button onClick={checkOrderStatus} disabled={isCheckingStatus}>
-        {isCheckingStatus ? "Checking Status..." : "Check Order Status"}
-      </Button>
+      <div className="mt-6">
+        <Button
+          onClick={checkOrderStatus}
+          disabled={isCheckingStatus}
+          className=" py-3 text-lg"
+        >
+          {isCheckingStatus ? "Checking Status..." : "Check Order Status"}
+        </Button>
+      </div>{" "}
     </div>
   );
 }
@@ -250,7 +254,7 @@ function SwapInputRow({
 }) {
   return (
     <div
-      className={`border flex justify-between p-6 ${
+      className={`border flex justify-between p-6  ${
         topBorderEnabled ? "rounded-t-xl" : ""
       } ${bottomBorderEnabled ? "rounded-b-xl" : ""}`}
     >
@@ -282,7 +286,7 @@ function AssetSelector({
   onSelect: (asset: TokenDetails) => void;
 }) {
   return (
-    <div className="w-24">
+    <div className="w-full">
       <select
         onChange={(e) => {
           const selectedToken = SUPPORTED_TOKENS.find(
@@ -302,25 +306,6 @@ function AssetSelector({
         ))}
       </select>
     </div>
-  );
-}
-
-function SwapIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth="1.5"
-      stroke="currentColor"
-      className="size-6"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5"
-      />
-    </svg>
   );
 }
 
