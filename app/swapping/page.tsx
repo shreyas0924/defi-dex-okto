@@ -123,6 +123,7 @@ function Swap({
         quoteResponse,
         publicKey,
       });
+      console.log("SWAP DATA", data);
 
       // Execute the raw transaction using Okto SDK
       const result = await executeRawTransaction({
@@ -320,7 +321,7 @@ function SwapIcon() {
 
 export default function SwappingPage() {
   const [publicKey, setPublicKey] = useState<string | null>(null);
-  const { getWallets } = useOkto() as OktoContextType;
+  const { getWallets, getPortfolio } = useOkto() as OktoContextType;
   const { data: walletsData, isLoading } = useQuery({
     queryKey: ["wallets"],
     queryFn: getWallets,

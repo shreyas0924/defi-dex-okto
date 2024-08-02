@@ -12,7 +12,7 @@ export interface Portfolio {
 }
 export const SUPPORTED_TOKENS: TokenDetails[] = [
   {
-    name: "SOL",
+    name: "SOL_DEVNET",
     mint: "So11111111111111111111111111111111111111112",
     native: true,
     price: "180",

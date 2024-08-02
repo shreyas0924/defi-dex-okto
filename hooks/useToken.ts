@@ -4,8 +4,8 @@ import { useOkto, type OktoContextType } from "okto-sdk-react";
 
 export interface TokenWithBalance {
   name: string;
-  address: string;
-  balance: number;
+  // address: string;
+  balance: string;
 }
 
 export function useTokens(publicKey: string | null) {
@@ -34,8 +34,9 @@ export function useTokens(publicKey: string | null) {
           totalBalance: response.total,
           tokens: response.tokens.map((token) => ({
             name: token.token_name,
-            address: token.token_address || "", // Default to empty string if not present
-            balance: Number(token.quantity),
+            // address:
+            //   token.token_name === "SOL_DEVNET" ? " " : token.token_address,
+            balance: token.quantity,
           })),
         };
 
