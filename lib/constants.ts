@@ -18,9 +18,10 @@ let prices: {
 
 const TOKEN_PRICE_REFRESH_INTERVAL = 60 * 1000; // every 60s
 
-export const connection = new Connection(
-  "https://mainnet.helius-rpc.com/?api-key=f51ac02d-ad2a-4a65-8874-dbbdf10182bd"
-);
+// export const connection = new Connection(
+//   "https://mainnet.helius-rpc.com/?api-key=f51ac02d-ad2a-4a65-8874-dbbdf10182bd"
+// );
+export const connection = new Connection("https://api.devnet.solana.com");
 
 export async function getSupportedTokens() {
   if (

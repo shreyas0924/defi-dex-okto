@@ -125,10 +125,15 @@ function Swap({
       });
       console.log("SWAP DATA", data);
 
+      // Convert the rawTransaction object to a Uint8Array
+      const rawTransactionArray = new Uint8Array(
+        Object.values(data.rawTransaction)
+      );
+
       // Execute the raw transaction using Okto SDK
       const result = await executeRawTransaction({
         network_name: "SOLANA_DEVNET",
-        transaction: data.rawTransaction,
+        transaction: rawTransactionArray,
       });
 
       if (result.jobId) {

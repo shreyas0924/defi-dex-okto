@@ -10,6 +10,7 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableHeader,
@@ -23,8 +24,13 @@ import { OktoContextType, useOkto } from "okto-sdk-react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
-  const { getPortfolio, orderHistory, getWallets } =
-    useOkto() as OktoContextType;
+  const {
+    getPortfolio,
+    orderHistory,
+    getSupportedNetworks,
+    getSupportedTokens,
+    getWallets,
+  } = useOkto() as OktoContextType;
 
   const { data: portfolio = [], isLoading: isPortfolioLoading } = useQuery({
     queryKey: ["portfolio"],
@@ -51,12 +57,23 @@ export default function Dashboard() {
       queryFn: () => orderHistory({}),
     }
   );
-  const { data: walletsData } = useQuery({
+
+  const { data: walletsData, isLoading } = useQuery({
     queryKey: ["wallets"],
     queryFn: getWallets,
   });
 
-  const recentTransactions = (orderHistoryData?.jobs || []).slice(0, 5);
+  const { data: networksData, isLoading: networksLoading } = useQuery({
+    queryKey: ["supportedNetworks"],
+    queryFn: getSupportedNetworks,
+  });
+
+  const { data: tokensData, isLoading: tokensLoading } = useQuery({
+    queryKey: ["supportedTokens"],
+    queryFn: getSupportedTokens,
+  });
+
+  const recentTransactions = orderHistoryData?.jobs || [];
 
   const totalEarningsInINR = portfolio.reduce((acc, token) => {
     return acc + parseFloat(token.quantity);
@@ -67,7 +84,6 @@ export default function Dashboard() {
   return (
     <main className="flex min-h-[calc(100vh_-_theme(spacing.16))] flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10">
       <div className="max-w-6xl w-full mx-auto grid gap-8">
-        {portfolioTokens.tokens.map((t) => t.network_name)}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-r from-[#7928CA] to-[#FF0080] text-white">
             <CardHeader className="flex flex-col items-start gap-2">
@@ -93,137 +109,7 @@ export default function Dashboard() {
             </CardHeader>
           </Card>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Staking</CardTitle>
-              <CardDescription>
-                Earn rewards by staking your crypto assets.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="BTC"
-                      className="rounded-full"
-                    />
-                    <div>Bitcoin (BTC)</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">5.2%</div>
-                    <div className="text-sm text-muted-foreground">APY</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="ETH"
-                      className="rounded-full"
-                    />
-                    <div>Ethereum (ETH)</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">6.8%</div>
-                    <div className="text-sm text-muted-foreground">APY</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="USDC"
-                      className="rounded-full"
-                    />
-                    <div>USDC</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">4.2%</div>
-                    <div className="text-sm text-muted-foreground">APY</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Stake Now</Button>
-            </CardFooter>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Swap</CardTitle>
-              <CardDescription>
-                Exchange your digital assets seamlessly.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="BTC"
-                      className="rounded-full"
-                    />
-                    <div>BTC</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">$47,500</div>
-                    <div className="text-sm text-muted-foreground">1 BTC</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="ETH"
-                      className="rounded-full"
-                    />
-                    <div>ETH</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">$3,000</div>
-                    <div className="text-sm text-muted-foreground">0.5 ETH</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src="/placeholder.svg"
-                      width={32}
-                      height={32}
-                      alt="USDC"
-                      className="rounded-full"
-                    />
-                    <div>USDC</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold">$10,000</div>
-                    <div className="text-sm text-muted-foreground">
-                      10,000 USDC
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button>Swap Now</Button>
-            </CardFooter>
-          </Card>
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-1  gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center gap-4">
@@ -298,6 +184,93 @@ export default function Dashboard() {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Supported Networks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {networksData?.network?.map((network) => (
+                  <div
+                    key={network.network_name}
+                    className="flex items-center justify-between p-3 bg-secondary rounded-lg"
+                  >
+                    <span className="font-medium">{network.network_name}</span>
+                    <Badge variant="outline">{network.chain_id}</Badge>
+                  </div>
+                )) || <div>No networks available</div>}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Supported Tokens</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Token Name</TableHead>
+                    <TableHead>Network</TableHead>
+                    <TableHead>Token Address</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tokensData?.tokens?.map((token, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {token.token_name}
+                      </TableCell>
+                      <TableCell>{token.network_name}</TableCell>
+                      <TableCell
+                        className="truncate max-w-xs"
+                        title={token.token_address}
+                      >
+                        {token.token_address || "Native Token"}
+                      </TableCell>
+                    </TableRow>
+                  )) || (
+                    <TableRow>
+                      <TableCell colSpan={3}>No tokens available</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle>Your Wallets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Network</TableHead>
+                    <TableHead>Address</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {walletsData?.wallets?.map((wallet) => (
+                    <TableRow key={wallet.address}>
+                      <TableCell>{wallet.network_name}</TableCell>
+                      <TableCell className="font-mono">
+                        {wallet.address}
+                      </TableCell>
+                    </TableRow>
+                  )) || (
+                    <TableRow>
+                      <TableCell colSpan={3}>No wallets available</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>
